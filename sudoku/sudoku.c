@@ -5,7 +5,7 @@
 #define GET_NODE_SIZE(x) x*x
 #define ROW 1
 #define COL 2
-#define SUDOKU_SIZE 2
+#define SUDOKU_SIZE 3
 
 typedef struct elem
 {
@@ -23,7 +23,6 @@ typedef struct sudoku_node
 }SUDOKU_NODE;
 
 SUDOKU_NODE *root;
-int sudoku_size;
 int FOUND;
 int DEBUG = 0;
 
@@ -33,7 +32,7 @@ int getPossibleCount(int ptr[], int *num)
 {
     int i;
     int count = 0;
-    int size = GET_NODE_SIZE(sudoku_size);
+    int size = GET_NODE_SIZE(SUDOKU_SIZE);
     for (i = 0; i < size; i++)
     {
         if (ptr[i] != 0)
@@ -68,6 +67,7 @@ void removeNumFromNode(ELEM elem[SUDOKU_SIZE][SUDOKU_SIZE], int num)
                 }
                 if (getPossibleCount(elem[i][j].possible_nums, &n) == 1)
                 {
+                    FOUND = 1;
                     elem[i][j].num = n;
                 }
             }
@@ -92,7 +92,7 @@ void trimPossibleNums(ELEM elem[SUDOKU_SIZE][SUDOKU_SIZE])
     }
 }
 
-SUDOKU_NODE * getSudokuNode(int row, int col)
+SUDOKU_NODE* getSudokuNode(int row, int col)
 {
     int i;
     int j;
@@ -100,27 +100,18 @@ SUDOKU_NODE * getSudokuNode(int row, int col)
     SUDOKU_NODE *ptr2;
 
     ptr1 = root;
-    for (i = 0; i < SUDOKU_SIZE; i++)
+    for (i = 0; ptr1 && i < SUDOKU_SIZE; i++)
     {
         ptr2 = ptr1;
-        for (j = 0; j < SUDOKU_SIZE; j++)
+        for (j = 0; ptr2 && j < SUDOKU_SIZE; j++)
         {
             if (i == row && j == col)
             {
-                if (ptr2)
-                    return ptr2;
-                else
-                    return NULL;
+                return (ptr2 ? ptr2 : NULL);
             }
-            if (ptr2)
-            {
-                ptr2 = ptr2->right;
-            }
+            ptr2 = ptr2->right;
         }
-        if (ptr1)
-        {
-            ptr1 = ptr1->down;
-        }
+        ptr1 = ptr1->down;
     }
     return NULL;
 }
@@ -151,7 +142,7 @@ void insertNode(char *line)
         {
             for (i = 0; i < size; i++)
             {
-                newNode->element[index / sudoku_size][index % sudoku_size].possible_nums[i] = i+1;
+                newNode->element[index / SUDOKU_SIZE][index % SUDOKU_SIZE].possible_nums[i] = i+1;
             }
         }
         str = strtok(NULL, " ");
@@ -173,10 +164,6 @@ void insertNode(char *line)
         {
             ptrNode = ptrNodeVertical;
             index = 0;
-            if (DEBUG)
-            {
-                printf("inside while\n");
-            }
 
             while (ptrNode->right && index < SUDOKU_SIZE-1)
             {
@@ -186,9 +173,6 @@ void insertNode(char *line)
 
             if (index != SUDOKU_SIZE-1)
             {
-                if (DEBUG)
-                    printf("Insert right\n");
-
                 ptrNode->right = newNode;
                 newNode->left = ptrNode;
                 if (indexDown != 0)
@@ -196,16 +180,14 @@ void insertNode(char *line)
                     tmp = getSudokuNode(indexDown-1, index+1);
                     if (tmp)
                     {
-                    newNode->up = tmp;
-                    tmp->down = newNode;
+                        newNode->up = tmp;
+                        tmp->down = newNode;
                     }
                 }
                 break;
             }
             else if (!ptrNodeVertical->down)
             {
-                if (DEBUG)
-                    printf("insert down\n");
                 ptrNodeVertical->down = newNode;
                 newNode->up = ptrNodeVertical;
                 break;
@@ -237,6 +219,8 @@ void printElements(SUDOKU_NODE *ptr)
         for (j = 0; j < SUDOKU_SIZE; j++)
         {
             printf("%d ", ptr->element[i][j].num);
+            if (DEBUG)
+            {
             if (ptr->element[i][j].num == 0)
             {
                 printf(" -- ");
@@ -248,6 +232,7 @@ void printElements(SUDOKU_NODE *ptr)
                     }
                 }
                 printf(" -- ");
+            }
             }
         }
     }
@@ -262,38 +247,30 @@ void printSudokuTree()
 
     printf("\n\nPrintingTree\n\n");
     ptr1 = root;
-    for (i = 0; i < SUDOKU_SIZE; i++)
+    for (i = 0; ptr1 && i < SUDOKU_SIZE; i++)
     {
         ptr2 = ptr1;
-        for (j = 0; j < SUDOKU_SIZE; j++)
+        for (j = 0; ptr2 && j < SUDOKU_SIZE; j++)
         {
-            if (ptr2)
-            {
-                printElements(ptr2);
-                ptr2 = ptr2->right;
-            }
+            printElements(ptr2);
+            ptr2 = ptr2->right;
         }
-        if (ptr1)
-        {
-            ptr1 = ptr1->down;
-        }
+        ptr1 = ptr1->down;
     }
 }
 
-void removeNumFromElement(ELEM *e, int num)
+int removeNumFromElement(ELEM *e, int num)
 {
     int size = GET_NODE_SIZE(SUDOKU_SIZE);
     int i;
     int n;
+    int count = 0;
 
-    if (DEBUG)
-    {
-        printf("Remove num from elements %d\n", num);
-    }
     for (i = 0; i < size; i++)
     {
-        if (e->possible_nums[i] == num)
+        if (e->num == 0 && e->possible_nums[i] == num)
         {
+            count++;
             e->possible_nums[i] = 0;
         }
     }
@@ -303,6 +280,7 @@ void removeNumFromElement(ELEM *e, int num)
         FOUND = 1;
         e->num = n;
     }
+    return count;
 }
 
 void clearNum(int num, int row, int col, SUDOKU_NODE *ptr, int direction)
@@ -332,6 +310,105 @@ void clearNum(int num, int row, int col, SUDOKU_NODE *ptr, int direction)
                 }
             }
         }
+    } // if (ptr)
+}
+
+SUDOKU_NODE* getLeftNode(SUDOKU_NODE *ptr, int k)
+{
+    int i;
+    for (i = 0; ptr && i < k; i++)
+    {
+        ptr = ptr->left;
+    }
+    return (ptr ? ptr->left : NULL);
+}
+
+SUDOKU_NODE* getRightNode(SUDOKU_NODE *ptr, int k)
+{
+    int i;
+    for (i = 0; ptr && i < k; i++)
+    {
+        ptr = ptr->right;
+    }
+    return (ptr ? ptr->right : NULL);
+}
+
+SUDOKU_NODE* getUpNode(SUDOKU_NODE *ptr, int k)
+{
+    int i;
+    for (i = 0; ptr && i < k; i++)
+    {
+        ptr = ptr->up;
+    }
+    return (ptr ? ptr->up : NULL);
+}
+
+SUDOKU_NODE* getDownNode(SUDOKU_NODE *ptr, int k)
+{
+    int i;
+    for (i = 0; ptr && i < k; i++)
+    {
+        ptr = ptr->down;
+    }
+    return (ptr ? ptr->down : NULL);
+}
+
+void removeUniqueFromNode(SUDOKU_NODE *ptr)
+{
+    int i;
+    int j;
+    int k;
+    int checked;
+    int count;
+    int size = GET_NODE_SIZE(SUDOKU_SIZE);
+    
+    if (DEBUG)
+    {
+        printf("remove unique from node\n");
+        printElements(ptr);
+    }
+
+    for (k = 0; k < size; k++)
+    {
+        checked = 0;
+        for (i = 0; i < SUDOKU_SIZE; i++)
+        {
+            for (j = 0; j < SUDOKU_SIZE; j++)
+            {
+                if (ptr && (ptr->element[i][j].num == 0) && 
+                    (ptr->element[i][j].possible_nums[k] != 0))
+                {
+                    checked++;
+                }
+            }
+        }
+        if (checked == 1)
+        {
+            if (DEBUG)
+            {
+                printf("checked %d\n", k);
+                printElements(ptr);
+            }
+            for (i = 0; i < SUDOKU_SIZE; i++)
+            {
+                for (j = 0; j < SUDOKU_SIZE; j++)
+                {
+                    if (ptr->element[i][j].num == 0)
+                    {
+                        count = removeNumFromElement(&(ptr->element[i][j]), k+1);
+                        if (count > 0)
+                        {
+                            ptr->element[i][j].num = k+1;
+                        }
+                    }
+                }
+            }
+            if (DEBUG && k == 8)
+            {
+                printf("checked %d\n", k);
+                printElements(ptr);
+            }
+        }
     }
 }
 
@@ -339,17 +416,21 @@ void populatePossibleNum(SUDOKU_NODE *ptr)
 {
     int i;
     int j;
-    int size = GET_NODE_SIZE(sudoku_size);
+    int k;
+    int size = GET_NODE_SIZE(SUDOKU_SIZE);
     for (i = 0; i < SUDOKU_SIZE; i++)
     {
         for (j = 0; j < SUDOKU_SIZE; j++)
         {
-            if (ptr->element[i][j].num != 0)
+            if (ptr && ptr->element[i][j].num != 0)
             {
-                clearNum(ptr->element[i][j].num, i, j, ptr->left, ROW);
-                clearNum(ptr->element[i][j].num, i, j, ptr->right, ROW);
-                clearNum(ptr->element[i][j].num, i, j, ptr->up, COL);
-                clearNum(ptr->element[i][j].num, i, j, ptr->down, COL);
+                for (k = 0; k < SUDOKU_SIZE-1; k++)
+                {
+                    clearNum(ptr->element[i][j].num, i, j, getLeftNode(ptr, k), ROW);
+                    clearNum(ptr->element[i][j].num, i, j, getRightNode(ptr, k), ROW);
+                    clearNum(ptr->element[i][j].num, i, j, getUpNode(ptr, k), COL);
+                    clearNum(ptr->element[i][j].num, i, j, getDownNode(ptr, k), COL);
+                }
             }
         }
     }
@@ -364,22 +445,35 @@ void trimSudoku()
     {
         FOUND = 0;
         ptr1 = root;
-        for (i = 0; i < sudoku_size; i++)
+        for (i = 0; ptr1 && i < SUDOKU_SIZE; i++)
         {
             ptr2 = ptr1;
-            for (j = 0; j < sudoku_size; j++)
+            for (j = 0; ptr2 && j < SUDOKU_SIZE; j++)
             {
-                if (ptr2)
-                {
-                    populatePossibleNum(ptr2);
-                    ptr2 = ptr2->right;
-                }
+                populatePossibleNum(ptr2);
+                ptr2 = ptr2->right;
             }
-            if (ptr1)
-            {
-                ptr1 = ptr1->down;
-            }
+            ptr1 = ptr1->down;
         }
+
+        printf("After first round\n");
+        printSudokuTree(root);
+
+        // find unique and trim
+        ptr1 = root;
+        for (i = 0; ptr1 && i < SUDOKU_SIZE; i++)
+        {
+            ptr2 = ptr1;
+            for (j = 0; ptr2 && j < SUDOKU_SIZE; j++)
+            {
+                removeUniqueFromNode(ptr2);
+                ptr2 = ptr2->right;
+            }
+            ptr1 = ptr1->down;
+        }
+        printf("After second round\n");
+        printSudokuTree(root);
+
         if (FOUND == 0)
         {
             break;
@@ -387,15 +481,12 @@ void trimSudoku()
     }
 }
     
-void solveSudoku()
-{
-}
-
 int main(int argc, char *argv[])
 {
     FILE *fp;
     char line[4096];
     int lineNum = 0;
+    int sudoku_size;
 
     if (argc < 2)
     {
@@ -436,6 +527,5 @@ int main(int argc, char *argv[])
 
     printSudokuTree(root);
 
-    solveSudoku();
     return 0;
 }
