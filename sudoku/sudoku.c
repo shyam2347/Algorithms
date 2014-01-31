@@ -32,8 +32,9 @@ void populatePossibleNum(SUDOKU_NODE *ptr);
 int getPossibleCount(int ptr[], int *num)
 {
     int i;
-    int count = 0;
     int size = GET_NODE_SIZE(SUDOKU_SIZE);
+    int count = 0;
+
     for (i = 0; i < size; i++)
     {
         if (ptr[i] != 0)
@@ -42,6 +43,7 @@ int getPossibleCount(int ptr[], int *num)
             *num = ptr[i];
         }
     }
+
     return count;
 }
 
@@ -71,9 +73,9 @@ void removeNumFromNode(ELEM elem[SUDOKU_SIZE][SUDOKU_SIZE], int num)
                     FOUND = 1;
                     elem[i][j].num = n;
                 }
-            }
-        }
-    }
+            } // if num == 0
+        } // for j
+    } // for i
 }
 
 void trimPossibleNums(ELEM elem[SUDOKU_SIZE][SUDOKU_SIZE])
@@ -400,6 +402,7 @@ void removeUniqueFromHorizontal(SUDOKU_NODE *ptr)
                     checked = getPossibleNumCountInRow(ptr, i, k);
                     if (checked == 1)
                     {
+                        printf("Inside check 1 %d\n", k);
                         for (l = 0; l < SUDOKU_SIZE-1; l++)
                         {
                             checked += getPossibleNumCountInRow(getLeftNode(ptr, l), i, k);
@@ -413,6 +416,7 @@ void removeUniqueFromHorizontal(SUDOKU_NODE *ptr)
                             {
                                 ptr->element[i][j].num = k+1;
                             }
+                            printElements(ptr);
                         }
                     }
                 }
@@ -512,6 +516,7 @@ void trimSudoku()
     int i,j;
     SUDOKU_NODE *ptr1;
     SUDOKU_NODE *ptr2;
+
     while (1)
     {
         FOUND = 0;
@@ -527,10 +532,14 @@ void trimSudoku()
             ptr1 = ptr1->down;
         }
 
-        if (DEBUG)
+        //if (DEBUG)
         {
             printf("After first round\n");
             printSudokuTree(root);
+        }
+        if (FOUND)
+        {
+            continue;
         }
 
         // find unique in node and trim
@@ -547,10 +556,14 @@ void trimSudoku()
             ptr1 = ptr1->down;
         }
 
-        if (DEBUG)
+        //if (DEBUG)
         {
             printf("After second round\n");
             printSudokuTree(root);
+        }
+        if (FOUND)
+        {
+            continue;
         }
 
         // find unique in line and trim
@@ -562,7 +575,15 @@ void trimSudoku()
             {
                 // 2 types
                 // 1) horizontal line computation
+                if (j == 1)
+                {
+                    printElements(ptr2);
+                }
                 removeUniqueFromHorizontal(ptr2);
+                if (j == 1)
+                {
+                    printElements(ptr2);
+                }
                 trimPossibleNums(ptr2->element);
                 // 2) vertical line computation
                 //removeUniqueFromVertical(ptr2);
@@ -571,7 +592,7 @@ void trimSudoku()
             ptr1 = ptr1->down;
         }
 
-        if (DEBUG)
+        //if (DEBUG)
         {
             printf("After third round\n");
             printSudokuTree(root);
