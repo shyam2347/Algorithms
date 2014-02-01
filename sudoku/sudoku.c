@@ -672,22 +672,21 @@ int removeAllNumFromElement(ELEM *e, int ptr[])
     {
         if (ptr[i] != 0)
         {
-            printf("i %d\n", i);
             count += removeNumFromElement(e, i+1);
         }
     }
     return count;
 }
 
-void removeDoubleFromNode (SUDOKU_NODE *ptr)
+void removeDoubleFromNode(SUDOKU_NODE *ptr)
 {
     int i;
     int j;
-    int d_i;
-    int d_j;
     int f_i;
     int f_j;
-    int checked = 0;
+    int firstFind = 0;
+    int checked_i;
+    int checked_j;
 
     if (!ptr)
     {
@@ -699,49 +698,44 @@ void removeDoubleFromNode (SUDOKU_NODE *ptr)
         {
             if (ptr->element[i][j].num == 0 && getPossibleCount(ptr->element[i][j].possible_nums, NULL) == 2)
             {
-                // Find another double
-                for (d_i = 0; d_i < SUDOKU_SIZE; d_i++)
+                if (!firstFind)
                 {
-                    for (d_j = 0; d_j < SUDOKU_SIZE; d_j++)
+                    checked_i = i;
+                    checked_j = j;
+                    firstFind = 1;
+                }
+                else
+                {
+                    if (compareDoubles(ptr->element[i][j].possible_nums, ptr->element[checked_i][checked_j].possible_nums))
                     {
-                        if (i != d_i || j != d_j)
+                        // Remove this double from all other places in the node
+                        for (f_i = 0; f_i < SUDOKU_SIZE; f_i++)
                         {
-                            if (ptr->element[i][j].num == 0 && getPossibleCount(ptr->element[d_i][d_j].possible_nums, NULL) == 2)
+                            for (f_j = 0; f_j < SUDOKU_SIZE; f_j++)
                             {
-                                // compare the two doubles.
-                                if (compareDoubles(ptr->element[i][j].possible_nums, ptr->element[d_i][d_j].possible_nums))
+                                if ((ptr->element[f_i][f_j].num == 0) && 
+                                    (!(f_i == i && f_j == j) && !(f_i == checked_i && f_j == checked_j)) &&
+                                    (removeAllNumFromElement(&(ptr->element[f_i][f_j]), ptr->element[i][j].possible_nums)))
                                 {
-                                    // Remove this double from all other places in the node
-                                    for (f_i = 0; f_i < SUDOKU_SIZE; f_i++)
-                                    {
-                                        for (f_j = 0; f_j < SUDOKU_SIZE; f_j++)
-                                        {
-                                            if (!(f_i == i && f_j == j) && !(f_i == d_i && f_j == d_j))
-                                            {
-                                                if (ptr->element[f_i][f_j].num == 0)
-                                                {
-                                                    printNode(ptr);
-                                                    if (removeAllNumFromElement(&(ptr->element[f_i][f_j]), ptr->element[i][j].possible_nums))
-                                                    {
-                                                        printf("Found a matching double\n");
-                                                        printNode(ptr);
-                                                        trimPossibleNums(ptr->element);
-                                                        printNode(ptr);
-                                                        checked++;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
+                                    trimPossibleNums(ptr->element);
+                                    FOUND = 1;
+                                    return;
                                 }
-                            }
-                        }
+                            } // for j
+                        } // for i
                     }
                 }
-                printNode(ptr);
-            }
-        }
-    }
+            } // if possible count == 2
+        } // for j
+    } // for i
+}
+
+void removeDoubleFromHorizontal(SUDOKU_NODE *ptr)
+{
+}
+
+void removeDoubleFromVertical(SUDOKU_NODE *ptr)
+{
 }
 
 void trimSudoku()
