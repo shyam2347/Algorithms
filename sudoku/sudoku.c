@@ -276,10 +276,11 @@ void printSudokuTree()
 //
 // Functio to print a node into the file
 //
-void printNodeToFile(SUDOKU_NODE *ptr, FILE *fout)
+void printNodeToArray(SUDOKU_NODE *ptr, int array[])
 {
     int i;
     int j;
+    int index = 0;
 
     if (!ptr)
     {
@@ -289,11 +290,7 @@ void printNodeToFile(SUDOKU_NODE *ptr, FILE *fout)
     {
         for (j = 0; j < SUDOKU_SIZE; j++)
         {
-            fprintf(fout,"%d",ptr->element[i][j].num);
-            if (i != SUDOKU_SIZE -1 || j != SUDOKU_SIZE-1)
-            {
-                fprintf(fout, ",");
-            }
+            array[index++] = ptr->element[i][j].num;
         }
     }
 }
@@ -306,26 +303,43 @@ void printTreeToFile(FILE *fout)
 {
     int i;
     int j;
+    int k;
+    int size = GET_NODE_SIZE(SUDOKU_SIZE);
+    int arr[size][size];
+    int array[size];
     SUDOKU_NODE *ptr1;
     SUDOKU_NODE *ptr2;
+
+    memset(arr, 0, sizeof(arr));
     ptr1 = root;
     for (i = 0; ptr1 && i < SUDOKU_SIZE; i++)
     {
         ptr2 = ptr1;
         for (j = 0; ptr2 && j < SUDOKU_SIZE; j++)
         {
-            printNodeToFile(ptr2, fout);
-            ptr2 = ptr2->right;
-            if (j != SUDOKU_SIZE-1)
+            memset(array, 0, sizeof(array));
+            printNodeToArray(ptr2, array);
+            for (k = 0; k < size; k++)
             {
-                fprintf(fout, ",");
-            }   
-        }
-        if (i != SUDOKU_SIZE-1)
-        {
-            fprintf(fout, ",");
+                arr[(i * SUDOKU_SIZE) + (k / SUDOKU_SIZE)][(j * SUDOKU_SIZE) + (k % SUDOKU_SIZE)] = array[k];
+            }
+            ptr2 = ptr2->right;
         }
         ptr1 = ptr1->down;
+    }
+
+    k = 0;
+    for (i = 0; i < size; i++)
+    {
+        for (j = 0; j < size; j++)
+        {
+            if (k != 0)
+            {
+                fprintf(fout,",");
+            }
+            fprintf(fout, "%d", arr[i][j]);
+            k++;
+        }
     }
 }
 

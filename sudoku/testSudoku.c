@@ -1,3 +1,9 @@
+//
+// Test program to verify if SUDOKU solver is bug free
+// Program orignially written for codeeval competition, adapting it
+// to automated test.
+// Author shyam (shyam2347@gmail.com)
+//
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
@@ -68,6 +74,17 @@ const char* checkSudoku(int *array, int m)
 {
     int i, j;
     int *tmpArray;
+    int arrSize = m*m;
+
+    // Zero Check
+    for (i = 0; i < m; i++)
+    {
+        if (array[i] == 0)
+        {
+            return "False";
+        }
+    }
+
     // Row Check
     tmpArray = array;
     for (i = 0; i < m; i++)
