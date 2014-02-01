@@ -60,10 +60,7 @@ void removeNumFromNode(ELEM elem[SUDOKU_SIZE][SUDOKU_SIZE], int num)
         {
             if (elem[i][j].num == 0)
             {
-                if (elem[i][j].possible_nums[num-1] == num)
-                {
-                    elem[i][j].possible_nums[num-1] = 0;
-                }
+                elem[i][j].possible_nums[num-1] = 0;
                 if (getPossibleCount(elem[i][j].possible_nums, &n) == 1)
                 {
                     FOUND = 1;
@@ -332,21 +329,20 @@ void printTreeToFile(FILE *fout)
 int removeNumFromElement(ELEM *e, int num)
 {
     int n;
-    int count = 0;
 
     if (e->num == 0 && e->possible_nums[num-1] == num)
     {
-        count++;
         e->possible_nums[num-1] = 0;
         if (getPossibleCount(e->possible_nums, &n) == 1)
         {
-            printf("\n\nSetting found = 1\n");
             FOUND = 1;
+            e->possible_nums[n-1] = 0;
             e->num = n;
         }
+        return 1;
     }
 
-    return count;
+    return 0;
 }
 
 void clearNum(int num, int row, int col, SUDOKU_NODE *ptr, int direction)
@@ -361,7 +357,7 @@ void clearNum(int num, int row, int col, SUDOKU_NODE *ptr, int direction)
     {
         for (i = 0; i < SUDOKU_SIZE; i++)
         {
-            if (ptr->element[row][i].num == 0)
+            if (ptr->element[row][i].num == 0) 
             {
                 if (removeNumFromElement(&(ptr->element[row][i]), num) == 1)
                 {
@@ -427,7 +423,7 @@ SUDOKU_NODE* getDownNode(SUDOKU_NODE *ptr, int k)
 
 //
 // Check this node and remove the present numbers from all possible num list 
-// from nodes left, right, up and down.
+// from its corresponding horizontal and vertical line.
 //
 void populatePossibleNum(SUDOKU_NODE *ptr)
 {
@@ -538,21 +534,26 @@ void removeUniqueFromHorizontal(SUDOKU_NODE *ptr)
 #endif
 }
 
+//
+// Find unique numbers present in possible num list from a particular node
+// If found, replace that element with the unique number.
+//
 void removeUniqueFromNode(SUDOKU_NODE *ptr)
 {
     int i;
     int j;
     int k;
     int checked;
+    int checked_i;
+    int checked_j;
     int count;
     int size = GET_NODE_SIZE(SUDOKU_SIZE);
-    
-    if (DEBUG)
-    {
-        //printf("remove unique from node\n");
-        //printNode(ptr);
-    }
 
+    if (!ptr)
+    {
+        return;
+    }
+    
     for (k = 0; k < size; k++)
     {
         checked = 0;
@@ -560,36 +561,22 @@ void removeUniqueFromNode(SUDOKU_NODE *ptr)
         {
             for (j = 0; j < SUDOKU_SIZE; j++)
             {
-                if (ptr && (ptr->element[i][j].num == 0) && 
+                if ((ptr->element[i][j].num == 0) && 
                     (ptr->element[i][j].possible_nums[k] != 0))
                 {
                     checked++;
+                    checked_i = i;
+                    checked_j = j;
                 }
             }
         }
+
         if (checked == 1)
         {
-            if (DEBUG)
-            {
-                //printf("checked %d\n", k);
-                //printNode(ptr);
-            }
-            for (i = 0; i < SUDOKU_SIZE; i++)
-            {
-                for (j = 0; j < SUDOKU_SIZE; j++)
-                {
-                    if (ptr->element[i][j].num == 0)
-                    {
-                        count = removeNumFromElement(&(ptr->element[i][j]), k+1);
-                        if (count > 0)
-                        {
-                            ptr->element[i][j].num = k+1;
-                        }
-                    }
-                }
-            }
+            ptr->element[checked_i][checked_j].num = k+1;
+            FOUND = 1;
         }
-    }
+    } // end of for
 }
 
 void trimSudoku()

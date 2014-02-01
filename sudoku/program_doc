@@ -1,0 +1,43 @@
+
+Function - trimPossibleNums
+param - Element[][]
+This works only inside a particular node
+Removes present number from possible numbers.
+
+Function - removeNumFromNode
+param - Element[][], int num
+Checks all empty slots in the node and clears num from possible numbers list
+If number of possible nums is only 1, empty slot is filled
+
+Function - getPossibleCount
+param - possiblenums[], int num
+Return type - int
+Returns number of possible_nums possible for an element
+
+Function - populatePossibleNum
+param - SUDOKU_NODE pointer
+Takes each number present in this node and removes this number from possible numbers
+list in its corresponding horizontal and vertical lines. 
+calls clearNum()
+
+Function - clearNum
+param - int num, int row, int col, SUDOKU_NODE *ptr, int direction
+Direction can be x or y axis
+Based on the direction, it checks only the elements in the particular row or col.
+If there is an empty slot, remove 'num' from the particular elements possible num list.
+calls removeNumFromElement()
+In a condition where the empty slot is filled, call trimPossibleNums()
+
+Function - removeNumFromElement
+param - Elem *, int num
+Return type - int
+Checks a single element if the num is present in the possible nums list and removes it.
+If there is only 1 number present in the possible nums list after removal, replace that
+number with the element number.
+
+Function - removeUniqueFromNode
+param - SUDOKU_NODE pointer
+This pertains only to a single node passed. Does not affect any other node.
+Checks if there is any unique number in possible_nums and fills that place with the unique
+number.
+
