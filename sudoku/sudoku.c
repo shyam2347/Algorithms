@@ -40,7 +40,10 @@ int getPossibleCount(int ptr[], int *num)
         if (ptr[i] != 0)
         {
             count++;
-            *num = ptr[i];
+            if (num)
+            {
+                *num = ptr[i];
+            }
         }
     }
 
@@ -455,7 +458,7 @@ void populatePossibleNum(SUDOKU_NODE *ptr)
     }
 }
 
-int getPossibleNumCountInRow(SUDOKU_NODE *ptr, int row, int k)
+int getPossibleNumCountInRowOrCol(SUDOKU_NODE *ptr, int index, int k, int direction)
 {
     int i;
     int count = 0;;
@@ -466,72 +469,123 @@ int getPossibleNumCountInRow(SUDOKU_NODE *ptr, int row, int k)
 
     for (i = 0; i < SUDOKU_SIZE; i++)
     {
-        if (ptr->element[row][i].num == 0 && 
-            ptr->element[row][i].possible_nums[k] != 0)
+        if (direction == ROW)
         {
-            count++;
+            if (ptr->element[index][i].num == 0 && 
+                ptr->element[index][i].possible_nums[k] != 0)
+            {
+                count++;
+            }
+        }
+        else
+        {
+            if (ptr->element[i][index].num == 0 && 
+                ptr->element[i][index].possible_nums[k] != 0)
+            {
+                count++;
+            }
         } 
     }
     return count;
 }
 
-
 // 
 // Fix a row, 
 // check column and then keep moving left and find if there is anything unique
 // then keep moving right and find if there is anything unique
+//
 void removeUniqueFromHorizontal(SUDOKU_NODE *ptr)
 {
     int k;
     int i;
     int j;
     int l;
-    int checked = 0;
+    int checked;
     int count;
     int size = GET_NODE_SIZE(SUDOKU_SIZE);
+
+    if (!ptr)
+    {
+        return;
+    }
 
     for (i = 0; i < SUDOKU_SIZE; i++)
     {
         for (j = 0; j < SUDOKU_SIZE; j++)
         {
-            if (ptr && (ptr->element[i][j].num == 0))
+            if ((ptr->element[i][j].num == 0))
             {
                 for (k = 0; k < size; k++)
                 {
-                    checked = getPossibleNumCountInRow(ptr, i, k);
+                    checked = getPossibleNumCountInRowOrCol(ptr, i, k, ROW);
                     if (checked == 1)
                     {
-                        printf("Inside check 1 %d\n", k);
                         for (l = 0; l < SUDOKU_SIZE-1; l++)
                         {
-                            checked += getPossibleNumCountInRow(getLeftNode(ptr, l), i, k);
-                            checked += getPossibleNumCountInRow(getRightNode(ptr, l), i, k);
+                            checked += getPossibleNumCountInRowOrCol(getLeftNode(ptr, l), i, k, ROW);
+                            checked += getPossibleNumCountInRowOrCol(getRightNode(ptr, l), i, k, ROW);
                         }
                         if (checked == 1)
                         {
-                            printf("checked %d\n", k);
                             count = removeNumFromElement(&(ptr->element[i][j]), k+1);
                             if (count  > 0)
                             {
                                 FOUND = 1;
-                                printf("count is more than 0\n");
                                 ptr->element[i][j].num = k+1;
                             }
-                            printNode(ptr);
                         }
                     }
                 }
             } // for j
         } // for i
     }
+}
 
-#if 0
-    if (DEBUG)
+void removeUniqueFromVertical (SUDOKU_NODE *ptr)
+{
+    int i;
+    int j;
+    int k;
+    int l;
+    int checked;
+    int count;
+    int size = GET_NODE_SIZE(SUDOKU_SIZE);
+
+    if (!ptr)
     {
-        printf("end of remove unique from horizontal\n");
-        printNode(ptr);
+        return;
     }
-#endif
+
+    for (i = 0; i < SUDOKU_SIZE; i++)
+    {
+        for (j = 0; j < SUDOKU_SIZE; j++)
+        {
+            if (ptr->element[i][j].num == 0)
+            {
+                for (k = 0; k < size; k++)
+                {
+                    checked = getPossibleNumCountInRowOrCol(ptr, j, k, COL);
+                    if (checked == 1)
+                    {
+                        for (l = 0; l < SUDOKU_SIZE-1; l++)
+                        {
+                            checked += getPossibleNumCountInRowOrCol(getUpNode(ptr, l), j, k, COL);
+                            checked += getPossibleNumCountInRowOrCol(getDownNode(ptr, l), j, k, COL);
+                        }
+                        if (checked == 1)
+                        {
+                            count = removeNumFromElement(&(ptr->element[i][j]), k+1);
+                            if (count  > 0)
+                            {
+                                FOUND = 1;
+                                ptr->element[i][j].num = k+1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 //
@@ -579,6 +633,103 @@ void removeUniqueFromNode(SUDOKU_NODE *ptr)
     } // end of for
 }
 
+int compareDoubles(int ptr1[], int ptr2[])
+{
+    int i;
+    int size = GET_NODE_SIZE(SUDOKU_SIZE);
+
+    for (i = 0; i < size; i++)
+    {
+        if (ptr1[i] != ptr2[i])
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int removeAllNumFromElement(ELEM *e, int ptr[])
+{
+    int i;
+    int size = GET_NODE_SIZE(SUDOKU_SIZE);
+    int count = 0;
+
+    for (i = 0; i < size; i++)
+    {
+        if (ptr[i] != 0)
+        {
+            printf("i %d\n", i);
+            count += removeNumFromElement(e, i+1);
+        }
+    }
+    return count;
+}
+
+void removeDoubleFromNode (SUDOKU_NODE *ptr)
+{
+    int i;
+    int j;
+    int d_i;
+    int d_j;
+    int f_i;
+    int f_j;
+    int checked = 0;
+
+    if (!ptr)
+    {
+        return;
+    }
+    for (i = 0; i < SUDOKU_SIZE; i++)
+    {
+        for (j = 0; j < SUDOKU_SIZE; j++)
+        {
+            if (ptr->element[i][j].num == 0 && getPossibleCount(ptr->element[i][j].possible_nums, NULL) == 2)
+            {
+                // Find another double
+                for (d_i = 0; d_i < SUDOKU_SIZE; d_i++)
+                {
+                    for (d_j = 0; d_j < SUDOKU_SIZE; d_j++)
+                    {
+                        if (i != d_i || j != d_j)
+                        {
+                            if (ptr->element[i][j].num == 0 && getPossibleCount(ptr->element[d_i][d_j].possible_nums, NULL) == 2)
+                            {
+                                // compare the two doubles.
+                                if (compareDoubles(ptr->element[i][j].possible_nums, ptr->element[d_i][d_j].possible_nums))
+                                {
+                                    // Remove this double from all other places in the node
+                                    for (f_i = 0; f_i < SUDOKU_SIZE; f_i++)
+                                    {
+                                        for (f_j = 0; f_j < SUDOKU_SIZE; f_j++)
+                                        {
+                                            if (!(f_i == i && f_j == j) && !(f_i == d_i && f_j == d_j))
+                                            {
+                                                if (ptr->element[f_i][f_j].num == 0)
+                                                {
+                                                    printNode(ptr);
+                                                    if (removeAllNumFromElement(&(ptr->element[f_i][f_j]), ptr->element[i][j].possible_nums))
+                                                    {
+                                                        printf("Found a matching double\n");
+                                                        printNode(ptr);
+                                                        trimPossibleNums(ptr->element);
+                                                        printNode(ptr);
+                                                        checked++;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                printNode(ptr);
+            }
+        }
+    }
+}
+
 void trimSudoku()
 {
     int i;
@@ -606,7 +757,7 @@ void trimSudoku()
             //if (DEBUG)
             {
                 printf("After first round - trimPossibleNums\n");
-                printSudokuTree(root);
+                printSudokuTree();
             }
             continue;
         }
@@ -629,7 +780,7 @@ void trimSudoku()
             //if (DEBUG)
             {
                 printf("After second round - populate possible num\n");
-                printSudokuTree(root);
+                printSudokuTree();
             }
             continue;
         }
@@ -657,7 +808,7 @@ uniqueFromNodeEnd:
             //if (DEBUG)
             {
                 printf("After third round - removeUniqueFromNode\n");
-                printSudokuTree(root);
+                printSudokuTree();
             }
             continue;
         }
@@ -677,7 +828,11 @@ uniqueFromNodeEnd:
                     goto uniqueInLineEnd;
                 }
                 // 2) vertical line computation
-                //removeUniqueFromVertical(ptr2);
+                removeUniqueFromVertical(ptr2);
+                if (FOUND)
+                {
+                    goto uniqueInLineEnd;
+                }
                 ptr2 = ptr2->right;
             }
             ptr1 = ptr1->down;
@@ -689,10 +844,51 @@ uniqueInLineEnd:
             //if (DEBUG)
             {
                 printf("After fourth round - remove unique from horizontal\n");
-                printSudokuTree(root);
+                printSudokuTree();
             }
             continue;
         }
+
+        // find double in node and trim
+        ptr1 = root;
+        for (i = 0; ptr1 && i < SUDOKU_SIZE; i++)
+        {
+            ptr2 = ptr1;
+            for (j = 0; ptr2 && j < SUDOKU_SIZE; j++)
+            {
+                removeDoubleFromNode(ptr2);
+                if (FOUND)
+                {
+                    goto doubleInNode;
+                }
+                ptr2 = ptr2->right;
+            }
+            ptr1 = ptr1->down;
+        }
+doubleInNode:
+        if (FOUND)
+        {
+            //if (DEBUG)
+            {
+                printf("After fifth round - double in node\n");
+                printSudokuTree();
+            }
+            continue;
+        }
+
+        // find double in line and trim
+doubleInLine:
+        if (FOUND)
+        {
+            //if (DEBUG)
+            {
+                printf("After sixth round - double in line\n");
+                printSudokuTree();
+            }
+            continue;
+        }
+
+
 
         if (FOUND == 0)
         {
@@ -742,11 +938,11 @@ int main(int argc, char *argv[])
     fclose(fp);
 
     printf("sudoku size %d\n", sudoku_size);
-    printSudokuTree(root);
+    printSudokuTree();
 
     trimSudoku();
 
-    printSudokuTree(root);
+    printSudokuTree();
 
     // printTree to output
     fout = fopen("out.txt","w");
