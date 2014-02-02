@@ -678,7 +678,7 @@ int removeAllNumFromElement(ELEM *e, int ptr[])
     return count;
 }
 
-void removeDoubleFromNode(SUDOKU_NODE *ptr)
+void removeDoubleFromNode(SUDOKU_NODE *ptr, int dbg)
 {
     int i;
     int j;
@@ -696,6 +696,7 @@ void removeDoubleFromNode(SUDOKU_NODE *ptr)
     {
         for (j = 0; j < SUDOKU_SIZE; j++)
         {
+findNext:
             if (ptr->element[i][j].num == 0 && getPossibleCount(ptr->element[i][j].possible_nums, NULL) == 2)
             {
                 if (!firstFind)
@@ -728,14 +729,170 @@ void removeDoubleFromNode(SUDOKU_NODE *ptr)
             } // if possible count == 2
         } // for j
     } // for i
+
+    if (firstFind)
+    {
+        if (!(checked_i == SUDOKU_SIZE-1 && checked_j == SUDOKU_SIZE-1))
+        {
+            i = checked_i;
+            j = (checked_j+1)%SUDOKU_SIZE;
+            if (j == 0)
+            {
+                i++; 
+            }
+            firstFind = 0;
+            goto findNext;
+        }
+    }
 }
 
-void removeDoubleFromHorizontal(SUDOKU_NODE *ptr)
+void removeDoubleFromHorizontal(SUDOKU_NODE *ptr, int dbg)
 {
+    int i;
+    int j;
+    int l;
+    SUDOKU_NODE *ptr2;
+    int k;
+    int f_j;
+
+    if (!ptr)
+    {
+        return;
+    }
+
+    for (i = 0; i < SUDOKU_SIZE; i++)
+    {
+        for (j = 0; j < SUDOKU_SIZE; j++)
+        {
+            if (ptr->element[i][j].num == 0 && getPossibleCount(ptr->element[i][j].possible_nums, NULL) == 2)
+            {
+                if (dbg)
+                {
+                    printf("i %d, j %d\n",i,j);
+                }
+                for (l = 0; l < SUDOKU_SIZE-1; l++)
+                {
+                    ptr2 = getLeftNode(ptr,l);
+                    for (k = 0; ptr2 && k < SUDOKU_SIZE; k++)
+                    {
+                        if (ptr2->element[i][k].num == 0 && getPossibleCount(ptr2->element[i][k].possible_nums, NULL) == 2)
+                        {
+                            if (compareDoubles(ptr->element[i][j].possible_nums, ptr2->element[i][k].possible_nums))
+                            {
+                                for (f_j = 0; f_j < SUDOKU_SIZE; f_j++)
+                                {
+                                    if (ptr->element[i][f_j].num == 0 && f_j != j &&
+                                        removeAllNumFromElement(&(ptr->element[i][f_j]), ptr->element[i][j].possible_nums))
+                                    {
+                                        trimPossibleNums(ptr->element);
+                                        FOUND = 1;
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    } // for k
+                } // for l
+                for (l = 0; l < SUDOKU_SIZE-1; l++)
+                {
+                    ptr2 = getRightNode(ptr, l);
+                    for (k = 0; ptr2 && k < SUDOKU_SIZE; k++)
+                    {
+                        if (ptr2->element[i][k].num == 0 && getPossibleCount(ptr2->element[i][k].possible_nums, NULL) == 2)
+                        {
+                            if (compareDoubles(ptr->element[i][j].possible_nums, ptr2->element[i][k].possible_nums))
+                            {
+                                if (dbg)
+                                {
+                                    printf("i %d, k %d\n",i,k);
+                                }
+                                for (f_j = 0; f_j < SUDOKU_SIZE; f_j++)
+                                {
+                                    if (ptr->element[i][f_j].num == 0 && f_j != j &&
+                                        removeAllNumFromElement(&(ptr->element[i][f_j]), ptr->element[i][j].possible_nums))
+                                    {
+                                        trimPossibleNums(ptr->element);
+                                        FOUND = 1;
+                                        return;
+                                    }
+                                } // for f_j
+                            }
+                        }
+                    } // for k
+                } // for l
+            } // if
+        } // for j
+    } // for i
 }
 
 void removeDoubleFromVertical(SUDOKU_NODE *ptr)
 {
+    int i;
+    int j;
+    int l;
+    SUDOKU_NODE *ptr2;
+    int k;
+    int f_i;
+
+    if (!ptr)
+    {
+        return;
+    }
+    for (i = 0; i < SUDOKU_SIZE; i++)
+    {
+        for (j = 0; j < SUDOKU_SIZE; j++)
+        {
+            if (ptr->element[i][j].num == 0 && getPossibleCount(ptr->element[i][j].possible_nums, NULL) == 2)
+            {
+                for (l = 0; l < SUDOKU_SIZE-1; l++)
+                {
+                    ptr2 = getUpNode(ptr,l);
+                    for (k = 0; ptr2 && k < SUDOKU_SIZE; k++)
+                    {
+                        if (ptr2->element[k][j].num == 0 && getPossibleCount(ptr2->element[k][j].possible_nums, NULL) == 2)
+                        {
+                            if (compareDoubles(ptr->element[i][j].possible_nums, ptr2->element[k][j].possible_nums))
+                            {
+                                for (f_i = 0; f_i < SUDOKU_SIZE; f_i++)
+                                {
+                                    if (ptr->element[f_i][j].num == 0 && f_i != i &&
+                                        removeAllNumFromElement(&(ptr->element[f_i][j]), ptr->element[i][j].possible_nums))
+                                    {
+                                        trimPossibleNums(ptr->element);
+                                        FOUND = 1;
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    } // for k
+                } // for l
+                for (l = 0; l < SUDOKU_SIZE-1; l++)
+                {
+                    ptr2 = getDownNode(ptr, l);
+                    for (k = 0; ptr2 && k < SUDOKU_SIZE; k++)
+                    {
+                        if (ptr2->element[k][j].num == 0 && getPossibleCount(ptr2->element[k][j].possible_nums, NULL) == 2)
+                        {
+                            if (compareDoubles(ptr->element[i][j].possible_nums, ptr2->element[k][j].possible_nums))
+                            {
+                                for (f_i = 0; f_i < SUDOKU_SIZE; f_i++)
+                                {
+                                    if (ptr->element[f_i][j].num == 0 && f_i != i &&
+                                        removeAllNumFromElement(&(ptr->element[f_i][j]), ptr->element[i][j].possible_nums))
+                                    {
+                                        trimPossibleNums(ptr->element);
+                                        FOUND = 1;
+                                        return;
+                                    }
+                                } // for f_i
+                            }
+                        }
+                    } // for k
+                } // for l
+            } // if
+        } // for j
+    } // for i
 }
 
 void trimSudoku()
@@ -864,7 +1021,15 @@ uniqueInLineEnd:
             ptr2 = ptr1;
             for (j = 0; ptr2 && j < SUDOKU_SIZE; j++)
             {
-                removeDoubleFromNode(ptr2);
+                if (i == 2 && j == 2)
+                {
+                printf("DoubleFromNode\n");
+                removeDoubleFromNode(ptr2, 1);
+                }
+                else
+                {
+                removeDoubleFromNode(ptr2, 0);
+                }
                 if (FOUND)
                 {
                     goto doubleInNode;
@@ -885,6 +1050,34 @@ doubleInNode:
         }
 
         // find double in line and trim
+        ptr1 = root;
+        for (i = 0; ptr1 && i < SUDOKU_SIZE; i++)
+        {
+            ptr2 = ptr1;
+            for (j = 0; ptr2 && j < SUDOKU_SIZE; j++)
+            {
+                if (i == 1 && j == 1)
+                {
+                    printf("remove double from horizontal\n");
+                removeDoubleFromHorizontal(ptr2,1);
+                }
+                else
+                {
+                removeDoubleFromHorizontal(ptr2,0);
+                }
+                if (FOUND)
+                {
+                    goto doubleInLine;
+                }
+                removeDoubleFromVertical(ptr2);
+                if (FOUND)
+                {
+                    goto doubleInLine;
+                }
+                ptr2 = ptr2->right;
+            }
+            ptr1 = ptr1->down;
+        }
 doubleInLine:
         if (FOUND)
         {
@@ -900,6 +1093,7 @@ doubleInLine:
 
         if (FOUND == 0)
         {
+            printf("Not found\n");
             break;
         }
     }
