@@ -349,10 +349,10 @@ int removeNumFromElement(ELEM *e, int num)
 
     if (e->num == 0 && e->possible_nums[num-1] == num)
     {
+        FOUND = 1;
         e->possible_nums[num-1] = 0;
         if (getPossibleCount(e->possible_nums, &n) == 1)
         {
-            FOUND = 1;
             e->possible_nums[n-1] = 0;
             e->num = n;
         }
@@ -684,9 +684,12 @@ void removeDoubleFromNode(SUDOKU_NODE *ptr, int dbg)
     int j;
     int f_i;
     int f_j;
+    int l;
+    int k;
     int firstFind = 0;
     int checked_i;
     int checked_j;
+    int size = GET_NODE_SIZE(SUDOKU_SIZE);
 
     if (!ptr)
     {
@@ -720,10 +723,10 @@ findNext:
                                 {
                                     trimPossibleNums(ptr->element);
                                     FOUND = 1;
-                                    return;
                                 }
                             } // for j
                         } // for i
+                        return;
                     }
                 }
             } // if possible count == 2
@@ -754,6 +757,8 @@ void removeDoubleFromHorizontal(SUDOKU_NODE *ptr, int dbg)
     SUDOKU_NODE *ptr2;
     int k;
     int f_j;
+    int n_j;
+    int size = GET_NODE_SIZE(SUDOKU_SIZE);
 
     if (!ptr)
     {
@@ -766,10 +771,28 @@ void removeDoubleFromHorizontal(SUDOKU_NODE *ptr, int dbg)
         {
             if (ptr->element[i][j].num == 0 && getPossibleCount(ptr->element[i][j].possible_nums, NULL) == 2)
             {
-                if (dbg)
+                // Find double in same node, same row 
+                for (n_j = 0; n_j < SUDOKU_SIZE; n_j++)
                 {
-                    printf("i %d, j %d\n",i,j);
+                    if (n_j != j && ptr->element[i][n_j].num == 0 && getPossibleCount(ptr->element[i][n_j].possible_nums, NULL) == 2)
+                    {
+                        if (compareDoubles(ptr->element[i][j].possible_nums, ptr->element[i][n_j].possible_nums))
+                        {
+                            for (l = 0; l < SUDOKU_SIZE-1; l++)
+                            {
+                                for (k = 0; k < size; k++)
+                                {
+                                    if (ptr->element[i][n_j].possible_nums[k] != 0)
+                                    {
+                                        clearNum(k+1, i, n_j, getLeftNode(ptr, l), ROW);
+                                        clearNum(k+1, i, n_j, getRightNode(ptr, l), ROW);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
+
                 for (l = 0; l < SUDOKU_SIZE-1; l++)
                 {
                     ptr2 = getLeftNode(ptr,l);
@@ -833,6 +856,8 @@ void removeDoubleFromVertical(SUDOKU_NODE *ptr)
     SUDOKU_NODE *ptr2;
     int k;
     int f_i;
+    int n_i;
+    int size = GET_NODE_SIZE(SUDOKU_SIZE);
 
     if (!ptr)
     {
@@ -844,6 +869,29 @@ void removeDoubleFromVertical(SUDOKU_NODE *ptr)
         {
             if (ptr->element[i][j].num == 0 && getPossibleCount(ptr->element[i][j].possible_nums, NULL) == 2)
             {
+                // Find double in same node, same col 
+                for (n_i = 0; n_i < SUDOKU_SIZE; n_i++)
+                {
+                    if (n_i != i && ptr->element[n_i][j].num == 0 && getPossibleCount(ptr->element[n_i][j].possible_nums, NULL) == 2)
+                    {
+                        if (compareDoubles(ptr->element[i][j].possible_nums, ptr->element[n_i][j].possible_nums))
+                        {
+                            for (l = 0; l < SUDOKU_SIZE-1; l++)
+                            {
+                                for (k = 0; k < size; k++)
+                                {
+                                    if (ptr->element[n_i][j].possible_nums[k] != 0)
+                                    {
+                                        clearNum(k+1, n_i, j, getUpNode(ptr, l), COL);
+                                        clearNum(k+1, n_i, j, getDownNode(ptr, l), COL);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+  
+                // Find double in up node, same col
                 for (l = 0; l < SUDOKU_SIZE-1; l++)
                 {
                     ptr2 = getUpNode(ptr,l);
@@ -867,6 +915,8 @@ void removeDoubleFromVertical(SUDOKU_NODE *ptr)
                         }
                     } // for k
                 } // for l
+
+                // Find double in down node, same col
                 for (l = 0; l < SUDOKU_SIZE-1; l++)
                 {
                     ptr2 = getDownNode(ptr, l);
