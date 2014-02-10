@@ -1039,6 +1039,7 @@ void findNakedTripleFromNode(SUDOKU_NODE *ptr)
     {
         for (j = 0; j < SUDOKU_SIZE; j++)
         {
+findNakedTripleFromNode_loopstart:
             if (ptr->element[i][j].num == 0 && getPossibleCount(ptr->element[i][j].possible_nums, NULL) <= 3)
             {
                 if (!first_find)
@@ -1077,6 +1078,35 @@ void findNakedTripleFromNode(SUDOKU_NODE *ptr)
             } // if getpossiblecount
         } // for j
     } // for i
+
+if (second_find && !third_find)
+{
+    if (!(second_i == SUDOKU_SIZE-1 && second_j == SUDOKU_SIZE-1))
+    {
+        i = second_i;
+        j = (second_j+1)%SUDOKU_SIZE;
+        if (j == 0)
+        {
+            i++;
+        }
+        second_find = 0;
+        goto findNakedTripleFromNode_loopstart;
+    }
+}
+else if (first_find && !second_find)
+{
+    if (!(first_i == SUDOKU_SIZE-1 && first_j == SUDOKU_SIZE-1))
+    {
+        i = first_i;
+        j = (first_j + 1)%SUDOKU_SIZE;
+        if (j == 0)
+        {
+            i++;
+        }
+        first_find = 0;
+        goto findNakedTripleFromNode_loopstart;
+    }
+}
 
 findNakedTripleFromNode_end:
     if (first_find && second_find && third_find)
@@ -1120,10 +1150,35 @@ findNakedTripleFromNode_end:
 
 void findNakedTripleFromHorizontal(SUDOKU_NODE *ptr)
 {
+    int i;
+    int j;
+    int first_find = 0;
+    int second_find = 0;
+    int third_find = 0;
+
+    if (!ptr)
+    {
+        return;
+    }
+
+    for (i = 0; i < SUDOKU_SIZE; i++)
+    {
+        // Find in node;
+        for (j = 0; j < SUDOKU_SIZE; j++)
+        {
+            if (ptr->element[i][j].num == 0 && getPossibleCount(ptr->element[i][j].possible_nums, NULL) <= 3)
+            {
+            }
+        }
+    }
 }
 
 void findNakedTripleFromVertical(SUDOKU_NODE *ptr)
 {
+    if (!ptr)
+    {
+        return;
+    }
 }
 
 void trimSudoku()
