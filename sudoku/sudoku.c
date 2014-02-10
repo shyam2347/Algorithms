@@ -945,6 +945,187 @@ void removeDoubleFromVertical(SUDOKU_NODE *ptr)
     } // for i
 }
 
+int checkSubset(int ptr1[], int ptr2[])
+{
+    int i;
+    int ptr1_size = 0;
+    int ptr2_size = 0;
+    int equal = 0;
+    int size = GET_NODE_SIZE(SUDOKU_SIZE);
+    for (i = 0; i < size; i++)
+    {
+        if (ptr1[i] != 0)
+        {
+            ptr1_size++;
+        }
+        if (ptr2[i] != 0)
+        {
+            ptr2_size++;
+        }
+        if (ptr1[i] == ptr2[i])
+        {
+            equal++;
+        }
+    }
+    if (ptr1_size == ptr2_size)
+    {
+        if (ptr1_size == 3)
+        {
+            if (equal == 9)
+                return 1;
+            else
+                return 0;
+        }
+        else
+        {
+            if (equal >= 7)
+                return 1;
+            else
+                return 0;
+        }
+    }
+    else
+    {
+        if (equal == 8)
+            return 1;
+        else
+            return 0;
+    }
+}
+
+void findNakedTripleFromNode(SUDOKU_NODE *ptr)
+{
+    int i;
+    int j;
+    int empty_slots = 0;
+    int first_find = 0;
+    int second_find = 0;
+    int third_find = 0;
+    int first_i;
+    int first_j;
+    int second_i;
+    int second_j;
+    int third_i;
+    int third_j;
+    int triplet_i;
+    int triplet_j;
+
+    if (!ptr)
+    {
+        return;
+    }
+
+    // Find if there are more than 3 empty slots in the node
+    for (i = 0; i < SUDOKU_SIZE; i++)
+    {
+        for (j = 0; j < SUDOKU_SIZE; j++)
+        {
+            if (ptr->element[i][j].num == 0)
+            {
+                empty_slots++;
+            }
+        }
+    }
+
+    if (empty_slots < 4)
+    {
+        return;
+    }
+
+    printf("valid case here\n");
+    printNode(ptr);
+
+    for (i = 0; i < SUDOKU_SIZE; i++)
+    {
+        for (j = 0; j < SUDOKU_SIZE; j++)
+        {
+            if (ptr->element[i][j].num == 0 && getPossibleCount(ptr->element[i][j].possible_nums, NULL) <= 3)
+            {
+                if (!first_find)
+                {
+                    first_i = i;
+                    first_j = j;
+                    first_find = 1;
+                }
+                else
+                {
+                    if (!second_find)
+                    {
+                        // find 1 and find 2 are subsets of one another? i.e., find 1 is subset of find 2 or find 2 is subset of find1 or find1 == find2
+                        if (checkSubset(ptr->element[first_i][first_j].possible_nums, ptr->element[i][j].possible_nums))
+                        {
+                            second_i = i;
+                            second_j = j;
+                            second_find = 1;
+                        }
+                    }
+                    else
+                    {
+                        // Find if 3rd element is subset of 1st and 2nd element.
+                        if (checkSubset(ptr->element[first_i][first_j].possible_nums, ptr->element[i][j].possible_nums) &&
+                            checkSubset(ptr->element[second_i][second_j].possible_nums, ptr->element[i][j].possible_nums) &&
+                            (getPossibleCount(ptr->element[i][j].possible_nums, NULL) == 3 || getPossibleCount(ptr->element[first_i][first_j].possible_nums, NULL) == 3 ||
+                             getPossibleCount(ptr->element[second_i][second_j].possible_nums, NULL) == 3))
+                        {
+                            third_i = i;
+                            third_j = j;
+                            third_find = 1;
+                            goto findNakedTripleFromNode_end;
+                        }
+                    }
+                }
+            } // if getpossiblecount
+        } // for j
+    } // for i
+
+findNakedTripleFromNode_end:
+    if (first_find && second_find && third_find)
+    {
+        if (getPossibleCount(ptr->element[first_i][first_j].possible_nums, NULL) == 3)
+        {
+            triplet_i = first_i;
+            triplet_j = first_j; 
+        }
+        else if (getPossibleCount(ptr->element[second_i][second_j].possible_nums, NULL) == 3)
+        {
+            triplet_i = second_i;
+            triplet_j = second_j;
+        }
+        else
+        {
+            triplet_i = third_i;
+            triplet_j = third_j;
+        }
+        
+        for (i = 0; i < SUDOKU_SIZE; i++)
+        {
+            for (j = 0; j < SUDOKU_SIZE; j++)
+            {
+                if (ptr->element[i][j].num == 0)
+                {
+                    if (!((i == first_i && j == first_j) || (i == second_i && j == second_j) || (i == third_i && j == third_j)))
+                    {
+                        // remove the three nums from the possible nums;
+                        if (removeAllNumFromElement(&(ptr->element[i][j]), ptr->element[triplet_i][triplet_j].possible_nums))
+                        {
+                            trimPossibleNums(ptr->element);
+                            FOUND = 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void findNakedTripleFromHorizontal(SUDOKU_NODE *ptr)
+{
+}
+
+void findNakedTripleFromVertical(SUDOKU_NODE *ptr)
+{
+}
+
 void trimSudoku()
 {
     int i;
@@ -1134,6 +1315,67 @@ doubleInLine:
             //if (DEBUG)
             {
                 printf("After sixth round - double in line\n");
+                printSudokuTree();
+            }
+            continue;
+        }
+
+        // find naked triple in node
+        ptr1 = root;
+        for (i = 0; ptr1 && i < SUDOKU_SIZE; i++)
+        {
+            ptr2 = ptr1;
+            for (j = 0; ptr2 && j < SUDOKU_SIZE; j++)
+            {
+                findNakedTripleFromNode(ptr2);
+                if (FOUND)
+                {
+                    goto nakedTripleInNode;
+                }
+                ptr2 = ptr2->right;
+            }
+            ptr1 = ptr1->down;
+        }
+
+nakedTripleInNode:
+        if (FOUND)
+        {
+            //if (DEBUG)
+            {
+                printf("After seventh round - naked triple in node\n");
+                printSudokuTree();
+            }
+            continue;
+        }
+
+        // find naked triple in line
+        ptr1 = root;
+        for (i = 0; ptr1 && i < SUDOKU_SIZE; i++)
+        {
+            ptr2 = ptr1;
+            for (j = 0; ptr2 && j < SUDOKU_SIZE; j++)
+            {
+                findNakedTripleFromHorizontal(ptr2);
+                if (FOUND)
+                {
+                    goto nakedTripleInLine;
+                }
+                findNakedTripleFromVertical(ptr2);
+                if (FOUND)
+                {
+                    goto nakedTripleInLine;
+                }
+                ptr2 = ptr2->right;
+            }
+            ptr1 = ptr1->down;
+        }
+
+nakedTripleInLine:
+        if (FOUND)
+        {
+            //if (DEBUG)
+            {
+                printf("After eighth round - naked triple in line\n");
                 printSudokuTree();
             }
             continue;

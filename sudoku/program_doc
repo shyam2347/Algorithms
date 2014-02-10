@@ -41,3 +41,21 @@ This pertains only to a single node passed. Does not affect any other node.
 Checks if there is any unique number in possible_nums and fills that place with the unique
 number.
 
+Function - findNakedTripleFromNode
+param - SUDOKU_NODE pointer
+For each element, find count of possiblenums, check for count <= 3. If found, keep checking for 
+the next element with same condition. If found, find if element1 is subset of element2 or 
+element2 is subset of element1. If any condition matches, keep looking for the third element.
+If a naked triplet is found, then remove the 3 possible nums from rest of the element's possible
+nums list in the node.
+
+Function - findNakedTripleFromHorizontal
+param - SUDOKU_NODE pointer
+Logic is similar to findNakedTriplesFromNode, but the check and computation is done row wise 
+instead of within a node.
+
+Function - findNakedTripleFromVertical
+param - SUDOKU_NODE pointer
+Logic is similar to findNakedTriplesFromNode, but the check and computation is done col wise 
+instead of within a node.
+
