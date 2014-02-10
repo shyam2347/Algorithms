@@ -22,6 +22,14 @@ typedef struct sudoku_node
     struct sudoku_node *down;
 }SUDOKU_NODE;
 
+typedef struct sudoku_line
+{
+    SUDOKU_NODE *ptr;
+    ELEM *element;
+    int row;
+    int col;
+}SUDOKU_LINE;
+
 SUDOKU_NODE *root;
 int FOUND;
 int DEBUG = 0;
@@ -1079,34 +1087,34 @@ findNakedTripleFromNode_loopstart:
         } // for j
     } // for i
 
-if (second_find && !third_find)
-{
-    if (!(second_i == SUDOKU_SIZE-1 && second_j == SUDOKU_SIZE-1))
+    if (second_find && !third_find)
     {
-        i = second_i;
-        j = (second_j+1)%SUDOKU_SIZE;
-        if (j == 0)
-        {
-            i++;
-        }
         second_find = 0;
-        goto findNakedTripleFromNode_loopstart;
-    }
-}
-else if (first_find && !second_find)
-{
-    if (!(first_i == SUDOKU_SIZE-1 && first_j == SUDOKU_SIZE-1))
-    {
-        i = first_i;
-        j = (first_j + 1)%SUDOKU_SIZE;
-        if (j == 0)
+        if (!(second_i == SUDOKU_SIZE-1 && second_j == SUDOKU_SIZE-1))
         {
-            i++;
+            i = second_i;
+            j = (second_j+1)%SUDOKU_SIZE;
+            if (j == 0)
+            {
+                i++;
+            }
+            goto findNakedTripleFromNode_loopstart;
         }
-        first_find = 0;
-        goto findNakedTripleFromNode_loopstart;
     }
-}
+    if (first_find && !second_find)
+    {
+        first_find = 0;
+        if (!(first_i == SUDOKU_SIZE-1 && first_j == SUDOKU_SIZE-1))
+        {
+            i = first_i;
+            j = (first_j + 1)%SUDOKU_SIZE;
+            if (j == 0)
+            {
+                i++;
+            }
+            goto findNakedTripleFromNode_loopstart;
+        }
+    }
 
 findNakedTripleFromNode_end:
     if (first_find && second_find && third_find)
@@ -1152,9 +1160,18 @@ void findNakedTripleFromHorizontal(SUDOKU_NODE *ptr)
 {
     int i;
     int j;
+    int l;
     int first_find = 0;
     int second_find = 0;
     int third_find = 0;
+    int size = GET_NODE_SIZE(SUDOKU_SIZE);
+    SUDOKU_LINE line[size];
+    int line_index;
+    SUDOKU_NODE *ptr2;
+    int first_j;
+    int second_j;
+    int third_j;
+    int triple_j;
 
     if (!ptr)
     {
@@ -1163,14 +1180,134 @@ void findNakedTripleFromHorizontal(SUDOKU_NODE *ptr)
 
     for (i = 0; i < SUDOKU_SIZE; i++)
     {
-        // Find in node;
+        memset(line, 0, sizeof(line));
+        first_find = 0;
+        second_find = 0;
+        third_find = 0;
+        line_index = 0;
+        // In current node
         for (j = 0; j < SUDOKU_SIZE; j++)
         {
-            if (ptr->element[i][j].num == 0 && getPossibleCount(ptr->element[i][j].possible_nums, NULL) <= 3)
+                line[line_index].ptr = ptr;
+                line[line_index].element = &(ptr->element[i][j]);
+                line[line_index].row = i;
+                line[line_index].col = j;
+                line_index++;
+        }
+
+        // In left node
+        for (l = 0; l < SUDOKU_SIZE-1; l++)
+        {
+            ptr2 = getLeftNode(ptr, l);
+            for (j = 0; ptr2 && j < SUDOKU_SIZE; j++)
             {
+                line[line_index].ptr = ptr2;
+                line[line_index].element = &(ptr2->element[i][j]);
+                line[line_index].row = i;
+                line[line_index].col = j;
+                line_index++;
+            }
+        }
+
+        // In right node
+        for (l = 0; l < SUDOKU_SIZE-1; l++)
+        {
+            ptr2 = getRightNode(ptr, l);
+            for (j = 0; ptr2 && j < SUDOKU_SIZE; j++)
+            {
+                line[line_index].ptr = ptr2;
+                line[line_index].element = &(ptr2->element[i][j]);
+                line[line_index].row = i;
+                line[line_index].col = j;
+                line_index++;
+            }
+        }
+
+        if (line_index > 3)
+        {
+            for (j = 0; j < line_index; j++)
+            {
+findNakedTripleFromHorizontal_loopstart:
+                if (line[j].element->num == 0 && getPossibleCount(line[j].element->possible_nums, NULL) <= 3)
+                {
+                    if (!first_find)
+                    {
+                        first_j = j;
+                        first_find = 1;
+                    }
+                    else
+                    {
+                        if (!second_find)
+                        {
+                            if (checkSubset(line[first_j].element->possible_nums, line[j].element->possible_nums))
+                            {
+                                second_j = j;
+                                second_find = 1;
+                            }
+                        }
+                        else
+                        {
+                            if (checkSubset(line[first_j].element->possible_nums, line[j].element->possible_nums) &&
+                                checkSubset(line[second_j].element->possible_nums, line[j].element->possible_nums) &&
+                                (getPossibleCount(line[j].element->possible_nums, NULL) == 3 || getPossibleCount(line[first_j].element->possible_nums, NULL) == 3 ||
+                                getPossibleCount(line[second_j].element->possible_nums, NULL) == 3))
+                            {
+                                third_j = j;
+                                third_find = 1;
+                                goto findNakedTripleFromHorizontal_end;
+                            }
+                        }
+                    }
+                }
+            }
+            if (second_find && !third_find)
+            {
+                second_find = 0;
+                if (second_j != line_index-1)
+                {
+                    j = second_j+1;
+                    goto findNakedTripleFromHorizontal_loopstart;
+                }
+            }
+            if (first_find && !second_find)
+            {
+                first_find = 0;
+                if (first_j != line_index-1)
+                {
+                    j = first_j + 1;
+                    goto findNakedTripleFromHorizontal_loopstart;
+                }
             }
         }
     }
+
+findNakedTripleFromHorizontal_end:
+    if (first_find && second_find && third_find)
+    {
+        if (getPossibleCount(line[first_j].element->possible_nums, NULL) == 3)
+        {
+            triple_j = first_j;
+        }
+        else if (getPossibleCount(line[second_j].element->possible_nums, NULL) == 3)
+        {
+            triple_j = second_j;
+        }
+        else
+        {
+            triple_j = third_j;
+        }
+        for (j = 0; j < line_index; j++)
+        {
+            if (j != first_j && j != second_j && j != third_j)
+            {
+                if (removeAllNumFromElement(line[j].element, line[triple_j].element->possible_nums))
+                {
+                    FOUND = 1;
+                }
+            }
+        }
+    }
+
 }
 
 void findNakedTripleFromVertical(SUDOKU_NODE *ptr)
