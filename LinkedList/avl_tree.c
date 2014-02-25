@@ -68,7 +68,7 @@ NODE* bst_insert(int num)
             if (parent->right == NULL)
             {
                 parent->right = ptr;
-                return;
+                return ptr;
             }
             parent = parent->right;
         }
@@ -77,7 +77,7 @@ NODE* bst_insert(int num)
             if (parent->left == NULL)
             {
                 parent->left = ptr;
-                return;
+                return ptr;
             }
             parent = parent->left;
         }
